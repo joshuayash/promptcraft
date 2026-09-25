@@ -140,5 +140,39 @@
     "loading": "加载中…",
     "error": "错误",
     "success": "成功"
+  },
+  "presetTpl": {
+    "general": {
+      "name": "通用优化",
+      "desc": "补全上下文与目标，消除歧义，让提示词更清晰、具体、可执行"
+    },
+    "coder": {
+      "name": "代码助手",
+      "desc": "补充技术栈、输入输出定义、边界情况与错误处理要求"
+    },
+    "structured": {
+      "name": "结构化输出",
+      "desc": "强制 JSON/Markdown 结构化输出，定义字段、类型与示例"
+    },
+    "role": {
+      "name": "角色强化",
+      "desc": "深化专业身份、语气风格与能力边界，提升回答一致性"
+    },
+    "concise": {
+      "name": "简洁精炼",
+      "desc": "不损失信息的前提下压缩提示词，显著降低 token 用量"
+    },
+    "literary": {
+      "name": "文学性优化",
+      "desc": "针对公文、散文、说明文、议论文、英语文章等写作任务的专项优化"
+    },
+    "image-gen": {
+      "name": "图片生成优化",
+      "desc": "针对 Midjourney/Stable Diffusion/DALL·E 等文生图模型的提示词优化"
+    },
+    "video-gen": {
+      "name": "视频生成优化",
+      "desc": "针对 Sora/可灵/即梦/Runway 等文生视频模型的提示词优化"
+    }
   }
 }

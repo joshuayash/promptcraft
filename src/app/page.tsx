@@ -258,6 +258,14 @@ export default function WorkbenchPage() {
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
+  // 预设模板名称/描述走 i18n（自定义模板用用户原文）
+  const tplKey = (tpl: { id: string }) =>
+    tpl.id.startsWith("preset:") ? tpl.id.slice(7) : "";
+  const tplName = (tpl: { id: string; name: string }) =>
+    tplKey(tpl) ? (t(`presetTpl.${tplKey(tpl)}.name`) as string) : tpl.name;
+  const tplDesc = (tpl: { id: string; description: string }) =>
+    tplKey(tpl) ? (t(`presetTpl.${tplKey(tpl)}.desc`) as string) : tpl.description;
+
   // 优化
   const handleOptimize = useCallback(async () => {
     if (!prompt.trim() || !selectedKey || !effectiveModel || !selectedTemplate)
@@ -329,7 +337,7 @@ export default function WorkbenchPage() {
         originalPrompt: prompt.trim(),
         optimizedPrompt: "",
         templateId: selectedTemplateId,
-        templateName: selectedTemplate.name,
+        templateName: tplName(selectedTemplate),
         provider: selectedKey.label,
         model: effectiveModel,
       };
@@ -396,7 +404,7 @@ export default function WorkbenchPage() {
               <SelectContent>
                 {templates.map((tpl) => (
                   <SelectItem key={tpl.id} value={tpl.id}>
-                    {tpl.name}
+                    {tplName(tpl)}
                     {tpl.isPreset && (
                       <Badge variant="secondary" className="ml-1 text-[10px]">
                         {t("templates.preset")}
@@ -408,7 +416,7 @@ export default function WorkbenchPage() {
             </Select>
             {selectedTemplate && (
               <p className="text-xs text-muted-foreground">
-                {selectedTemplate.description}
+                {tplDesc(selectedTemplate)}
               </p>
             )}
           </div>

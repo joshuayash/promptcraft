@@ -140,5 +140,39 @@
     "loading": "Loading…",
     "error": "Error",
     "success": "Success"
+  },
+  "presetTpl": {
+    "general": {
+      "name": "General Optimization",
+      "desc": "Fill in context and goals, remove ambiguity, make prompts clearer and more actionable"
+    },
+    "coder": {
+      "name": "Code Assistant",
+      "desc": "Add tech stack, I/O definitions, edge cases and error handling requirements"
+    },
+    "structured": {
+      "name": "Structured Output",
+      "desc": "Enforce JSON/Markdown structured output with fields, types and examples"
+    },
+    "role": {
+      "name": "Role Enhancement",
+      "desc": "Deepen professional identity, tone and capability boundaries for consistent answers"
+    },
+    "concise": {
+      "name": "Concise Refinement",
+      "desc": "Compress prompts without losing information, significantly reducing token usage"
+    },
+    "literary": {
+      "name": "Literary Optimization",
+      "desc": "Specialized for official documents, essays, expository/argumentative writing, English articles"
+    },
+    "image-gen": {
+      "name": "Image Generation",
+      "desc": "Prompt optimization for text-to-image models like Midjourney/Stable Diffusion/DALL·E"
+    },
+    "video-gen": {
+      "name": "Video Generation",
+      "desc": "Prompt optimization for text-to-video models like Sora/Kling/Runway"
+    }
   }
 }

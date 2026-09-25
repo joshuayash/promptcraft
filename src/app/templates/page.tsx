@@ -31,6 +31,7 @@ export default function TemplatesPage() {
   const { data: session, status: authStatus } = useSession();
   const isLoggedIn = authStatus === "authenticated" && !!session?.user;
   const { t } = useLocale();
+  const presetKey = (id: string) => (id.startsWith("preset:") ? id.slice(7) : "");
 
   const [customTemplates, setCustomTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,14 +222,18 @@ export default function TemplatesPage() {
             <Card key={tpl.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-base">{tpl.name}</CardTitle>
+                  <CardTitle className="text-base">
+                  {presetKey(tpl.id) ? (t(`presetTpl.${presetKey(tpl.id)}.name`) as string) : tpl.name}
+                </CardTitle>
                   <Badge variant="secondary" className="text-[10px]">
                     {t("templates.preset")}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{tpl.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {presetKey(tpl.id) ? (t(`presetTpl.${presetKey(tpl.id)}.desc`) as string) : tpl.description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -249,7 +254,9 @@ export default function TemplatesPage() {
             {customTemplates.map((tpl) => (
               <Card key={tpl.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{tpl.name}</CardTitle>
+                  <CardTitle className="text-base">
+                  {presetKey(tpl.id) ? (t(`presetTpl.${presetKey(tpl.id)}.name`) as string) : tpl.name}
+                </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="mb-3 text-sm text-muted-foreground">
