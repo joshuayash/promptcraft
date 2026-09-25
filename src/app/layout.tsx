@@ -24,7 +24,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      {/* suppressHydrationWarning：浏览器翻译类扩展会在 React 加载前向 body 注入 DOM，
+          导致 hydration mismatch 警告，此属性为官方推荐防御 */}
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-background text-foreground"
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
