@@ -37,7 +37,7 @@
 ### 3.3 双模式架构
 - **未登录（纯本地模式）**：API key 存 localStorage，优化历史存 localStorage，前端直连厂商 API。CORS 限制由各厂商浏览器支持情况决定（OpenAI 等支持直连，不支持的场景引导用户登录使用后端代理）
 - **已登录**：API key AES-256-GCM 加密存服务端数据库；优化历史存数据库（多设备同步）；调用走后端代理（API 路由）
-- 未登录用户注册后可提示「将本地历史迁移到账号」（后置任务，MVP 可选）
+- 未登录用户注册后可提示「将本地历史迁移到账号」（后续迭代，MVP 不做，见第 9 节）
 
 ### 3.4 结果展示
 - 左右分栏：原始（只读）vs 优化后（流式输出 + 可编辑）
@@ -100,11 +100,12 @@ model OptimizationHistory {
 
 ## 5. AI 调用设计
 
-### 5.1 统一流式接口
-所有厂商走 Vercel AI SDK 的 `streamText()`，前端用 `useCompletion` 或手写 SSE 消费，呈现打字机效果。
+### 5.1 流式接口与前端消费
+后端（已登录代理路径）：所有厂商走 Vercel AI SDK 的 `streamText()`，以 AI SDK UI 协议流式返回；前端用 `useCompletion` 消费。
+未登录直连路径：前端 `fetch` 直连 OpenAI 兼容端点，自行解析原生 OpenAI SSE 格式；两套消费逻辑共用同一套打字机 UI 组件。
 
 ### 5.2 未登录 vs 已登录的调用路径
-- 未登录：前端 `fetch` 自建 SSE 消费 → 直连各厂商端点
+- 未登录：前端 `fetch` + 自解析 OpenAI 原生 SSE → 直连** OpenAI 兼容端点**（见 8.1 的 CORS 约束）
 - 已登录：前端 → `/api/optimize` 路由 → 后端解密 key → `streamText()` → 流式返回
 - 两条路径共用同一套**厂商连接配置对象**（baseURL、apiKey、模型名、协议类型），后端加密存，未登录版存 localStorage
 
@@ -138,7 +139,7 @@ GITHUB_SECRET=""
 - 自定义请求模板（完全私有协议）
 - i18n（中文单语）
 
-## 8.1 未登录用户的关键约束（重要）
+### 8.1 未登录用户的关键约束（重要）
 
 未登录直连模式下，受浏览器 CORS 限制，部分厂商（如 Anthropic、Gemini）无法从浏览器直接调用。MVP 处理方式：**未登录仅支持 OpenAI 兼容端点直连**；Anthropic/Gemini 原生协议需要登录走后端代理。在 UI 上明确提示该限制。
 
@@ -155,6 +156,6 @@ GITHUB_SECRET=""
 1. `npm run dev` 可启动，`/` 工作台可完成一次完整的「输入 → 优化 → 对比 → 复制/保存」流程
 2. 5 个预设模板生效，自定义模板可创建并在工作台选用
 3. 8 个内置厂商 + 自定义厂商（任意端点 + 三协议）可配置 key 并完成一次优化
-4. 発录后 key 存数据库且为密文，历史存数据库；未登录走 localStorage + 直连
+4. 登录后 key 存数据库且为密文，历史存数据库；未登录走 localStorage + 直连
 5. 建议的 5 页面全部可用
 6. 可部署到 Vercel（SQLite 换 Vercel Postgres 或 Turso，见实现计划讨论）
