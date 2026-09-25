@@ -1,0 +1,48 @@
+{
+  "name": "promptcraft",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.63",
+    "@ai-sdk/google": "^4.0.80",
+    "@ai-sdk/openai": "^4.0.75",
+    "@alloc/quick-lru": "^5.3.0",
+    "@libsql/client": "^0.18.0",
+    "@prisma/adapter-libsql": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@tailwindcss/node": "^4.3.3",
+    "@tailwindcss/oxide": "^4.3.3",
+    "ai": "^7.0.114",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.4.0",
+    "lucide-react": "^1.48.0",
+    "next": "16.3.6",
+    "next-auth": "^5.0.0-beta.32",
+    "postcss": "^8.5.28",
+    "radix-ui": "^1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "shadcn": "^4.21.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "prisma": "^7.10.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}

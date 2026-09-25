@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  apiKeys   ApiKey[]
+  templates Template[]
+  histories OptimizationHistory[]
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  provider  String // 内置厂商 id（见 src/lib/providers.ts）或 "custom"
+  protocol  String // "openai" | "anthropic" | "gemini"
+  apiKeyEnc String // AES-256-GCM 密文
+  baseUrl   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  description  String
+  systemPrompt String
+  isPreset     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  histories OptimizationHistory[]
+
+  @@index([userId])
+}
+
+model OptimizationHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalPrompt  String
+  optimizedPrompt String
+  templateId      String?
+  template        Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  provider        String
+  model           String
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
