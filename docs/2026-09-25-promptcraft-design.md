@@ -14,7 +14,7 @@
 | --- | --- |
 | 框架 | Next.js App Router + TypeScript，单包（create-next-app 初始化，`--src-dir`） |
 | UI | Tailwind CSS + shadcn/ui |
-| 数据库 | SQLite + Prisma |
+| 数据库 | Turso（libSQL 托管 SQLite）+ Prisma driver adapter（`@prisma/adapter-libsql`）；本地开发用 SQLite 文件，同一 libSQL 方言 |
 | 认证 | NextAuth（邮箱/密码），另支持免登录纯本地模式 |
 | AI 调用 | Vercel AI SDK：`ai` + `@ai-sdk/openai` + `@ai-sdk/anthropic` + `@ai-sdk/google`，流式输出 |
 | 部署 | Vercel |
@@ -119,11 +119,13 @@ model OptimizationHistory {
 ## 7. 环境变量
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./dev.db"          # 本地开发（libSQL 方言）
+TURSO_DATABASE_URL=""               # 生产（Vercel）用 Turso 托管库
+TURSO_AUTH_TOKEN=""
 NEXTAUTH_SECRET="随机字符串"
 NEXTAUTH_URL="http://localhost:3000"
 ENCRYPTION_KEY="32字节随机hex"   // AES-256-GCM 加密用户 API key
-GITHUB_ID=""                     // 可选 OAuth
+GITHUB_ID=""                     // 可选 OAuth（架构预留，MVP 不启用）
 GITHUB_SECRET=""
 ```
 
@@ -158,4 +160,4 @@ GITHUB_SECRET=""
 3. 8 个内置厂商 + 自定义厂商（任意端点 + 三协议）可配置 key 并完成一次优化
 4. 登录后 key 存数据库且为密文，历史存数据库；未登录走 localStorage + 直连
 5. 建议的 5 页面全部可用
-6. 可部署到 Vercel（SQLite 换 Vercel Postgres 或 Turso，见实现计划讨论）
+6. 可部署到 Vercel：生产用 Turso 托管数据库，本地开发用 SQLite 文件（同一 libSQL 方言，schema 无需切换 provider）
