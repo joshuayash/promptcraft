@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getLocalHistory, deleteLocalHistory } from "@/lib/local-store";
+import { useLocale } from "@/lib/locale-context";
 import type { HistoryEntry, ApiErrorBody } from "@/lib/types";
 
 interface HistoryResponse {
@@ -19,6 +20,7 @@ interface HistoryResponse {
 export default function HistoryPage() {
   const { data: session, status: authStatus } = useSession();
   const isLoggedIn = authStatus === "authenticated" && !!session?.user;
+  const { t, locale } = useLocale();
 
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +61,7 @@ export default function HistoryPage() {
 
   function formatDate(iso: string): string {
     try {
-      return new Date(iso).toLocaleString("zh-CN", {
+      return new Date(iso).toLocaleString(locale, {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -75,13 +77,13 @@ export default function HistoryPage() {
     <>
       <Navbar />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-        <h1 className="mb-6 text-2xl font-bold">历史记录</h1>
+        <h1 className="mb-6 text-2xl font-bold">{t("history.title")}</h1>
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">加载中…</p>
+          <p className="text-sm text-muted-foreground">{t("history.loading")}</p>
         ) : entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            还没有优化记录，去工作台优化你的第一个提示词吧。
+            {t("history.empty")}
           </p>
         ) : (
           <div className="space-y-3">
@@ -116,7 +118,7 @@ export default function HistoryPage() {
                     <div className="mb-3 space-y-3 rounded-md border bg-muted/50 p-3">
                       <div>
                         <p className="mb-1 text-xs font-medium text-muted-foreground">
-                          原始提示词
+                          {t("history.originalPrompt")}
                         </p>
                         <pre className="whitespace-pre-wrap text-sm">
                           {entry.originalPrompt}
@@ -124,7 +126,7 @@ export default function HistoryPage() {
                       </div>
                       <div>
                         <p className="mb-1 text-xs font-medium text-muted-foreground">
-                          优化结果
+                          {t("history.optimizedResult")}
                         </p>
                         <pre className="whitespace-pre-wrap text-sm">
                           {entry.optimizedPrompt}
@@ -143,21 +145,21 @@ export default function HistoryPage() {
                         )
                       }
                     >
-                      {expandedId === entry.id ? "收起" : "展开"}
+                      {expandedId === entry.id ? t("history.collapse") : t("history.expand")}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleCopy(entry.optimizedPrompt)}
                     >
-                      复制结果
+                      {t("history.copyResult")}
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => void handleDelete(entry.id)}
                     >
-                      删除
+                      {t("history.delete")}
                     </Button>
                   </div>
                 </CardContent>

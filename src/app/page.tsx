@@ -17,12 +17,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PRESET_TEMPLATES } from "@/lib/preset-templates";
-import { PROVIDERS, getProvider } from "@/lib/providers";
+import { getProvider } from "@/lib/providers";
 import {
   getLocalKeys,
   getLocalTemplates,
   addLocalHistory,
+  getCustomModelsForProvider,
 } from "@/lib/local-store";
+import { useLocale } from "@/lib/locale-context";
 import type {
   TemplateItem,
   ApiKeyView,
@@ -52,29 +54,62 @@ function maskLocal(key: string): string {
   return `${key.slice(0, 4)}••••${key.slice(-4)}`;
 }
 
-/** 游客模式：浏览器直连 Moonshot AI 兼容端点，解析 SSE 流 */
+/** 游客模式：浏览器直连各协议端点，解析 SSE 流 */
 async function* streamGuest(
   baseUrl: string,
   apiKey: string,
   model: string,
   system: string,
   prompt: string,
+  protocol: string,
 ): AsyncGenerator<string> {
   const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
+  
+  // 根据协议构建请求体
+  let body: Record<string, unknown>;
+  let headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (protocol === "anthropic") {
+    // Anthropic 协议
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+    body = {
+      model,
+      max_tokens: 4096,
+      stream: true,
+      system,
+      messages: [{ role: "user", content: prompt }],
+    };
+  } else if (protocol === "gemini") {
+    // Gemini 协议
+    headers["Authorization"] = `Bearer ${apiKey}`;
+    body = {
       model,
       stream: true,
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt },
       ],
-    }),
+    };
+  } else {
+    // OpenAI 兼容协议（openai, moonshot, deepseek, xai, zhipu, qwen 等）
+    headers["Authorization"] = `Bearer ${apiKey}`;
+    body = {
+      model,
+      stream: true,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    };
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -107,11 +142,24 @@ async function* streamGuest(
       if (data === "[DONE]") return;
       try {
         const json: unknown = JSON.parse(data);
-        const delta = (
-          json as {
-            choices?: { delta?: { content?: string } }[];
+        // 处理不同协议的响应格式
+        let delta: string | undefined;
+        if (protocol === "anthropic") {
+          // Anthropic 响应格式
+          const anthropicJson = json as {
+            type?: string;
+            delta?: { text?: string };
+          };
+          if (anthropicJson.type === "content_block_delta") {
+            delta = anthropicJson.delta?.text;
           }
-        ).choices?.[0]?.delta?.content;
+        } else {
+          // OpenAI 兼容响应格式
+          const openaiJson = json as {
+            choices?: { delta?: { content?: string } }[];
+          };
+          delta = openaiJson.choices?.[0]?.delta?.content;
+        }
         if (delta) yield delta;
       } catch {
         // 忽略不完整 JSON 行
@@ -125,6 +173,7 @@ async function* streamGuest(
 export default function WorkbenchPage() {
   const { data: session, status: authStatus } = useSession();
   const isLoggedIn = authStatus === "authenticated" && !!session?.user;
+  const { t } = useLocale();
 
   // 输入状态
   const [prompt, setPrompt] = useState("");
@@ -202,7 +251,9 @@ export default function WorkbenchPage() {
 
   const selectedKey = keys.find((k) => k.id === selectedKeyId);
   const providerDef = selectedKey ? getProvider(selectedKey.provider) : undefined;
-  const modelList = providerDef?.models ?? [];
+  // 合并预设模型和自定义模型
+  const customModels = selectedKey ? getCustomModelsForProvider(selectedKey.provider) : [];
+  const modelList = [...(providerDef?.models ?? []), ...customModels];
   const effectiveModel = customModel.trim() || selectedModel;
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
@@ -250,12 +301,7 @@ export default function WorkbenchPage() {
           setOutput(acc);
         }
       } else {
-        // 游客：浏览器直连（仅 Moonshot AI 兼容协议）
-        if (selectedKey.protocol !== "openai") {
-          throw new Error(
-            "游客模式仅支持 Moonshot AI 兼容协议的厂商。Anthropic/Gemini 原生协议请登录后使用。",
-          );
-        }
+        // 游客：浏览器直连（支持所有协议）
         if (!selectedKey.apiKey || !selectedKey.baseUrl) {
           throw new Error("缺少 API Key 或端点地址");
         }
@@ -267,6 +313,7 @@ export default function WorkbenchPage() {
           effectiveModel,
           selectedTemplate.systemPrompt,
           prompt.trim(),
+          selectedKey.protocol,
         );
         for await (const chunk of gen) {
           if (controller.signal.aborted) break;
@@ -278,10 +325,9 @@ export default function WorkbenchPage() {
       setStatus("done");
 
       // 保存历史
-      const finalOutput = output; // 注意：这里 output 可能不是最终值，用 acc 更准确
       const historyEntry = {
         originalPrompt: prompt.trim(),
-        optimizedPrompt: "", // 会在下面更新
+        optimizedPrompt: "",
         templateId: selectedTemplateId,
         templateName: selectedTemplate.name,
         provider: selectedKey.label,
@@ -342,18 +388,18 @@ export default function WorkbenchPage() {
         <div className="mb-6 grid gap-4 md:grid-cols-3">
           {/* 模板选择 */}
           <div className="space-y-2">
-            <Label>优化模板</Label>
+            <Label>{t("workbench.template")}</Label>
             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
               <SelectTrigger>
-                <SelectValue placeholder="选择模板" />
+                <SelectValue placeholder={t("workbench.templatePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                    {t.isPreset && (
+                {templates.map((tpl) => (
+                  <SelectItem key={tpl.id} value={tpl.id}>
+                    {tpl.name}
+                    {tpl.isPreset && (
                       <Badge variant="secondary" className="ml-1 text-[10px]">
-                        预设
+                        {t("templates.preset")}
                       </Badge>
                     )}
                   </SelectItem>
@@ -369,15 +415,15 @@ export default function WorkbenchPage() {
 
           {/* 厂商/Key 选择 */}
           <div className="space-y-2">
-            <Label>API Key</Label>
+            <Label>{t("workbench.apiKey")}</Label>
             <Select value={selectedKeyId} onValueChange={setSelectedKeyId}>
               <SelectTrigger>
-                <SelectValue placeholder="选择 Key" />
+                <SelectValue placeholder={t("workbench.apiKeyPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {keys.length === 0 && (
                   <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                    请先在设置中添加 API Key
+                    {t("workbench.noApiKey")}
                   </div>
                 )}
                 {keys.map((k) => (
@@ -399,11 +445,11 @@ export default function WorkbenchPage() {
 
           {/* 模型选择 */}
           <div className="space-y-2">
-            <Label>模型</Label>
+            <Label>{t("workbench.model")}</Label>
             {modelList.length > 0 ? (
               <Select value={selectedModel} onValueChange={setSelectedModel}>
                 <SelectTrigger>
-                  <SelectValue placeholder="选择模型" />
+                  <SelectValue placeholder={t("workbench.modelPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {modelList.map((m) => (
@@ -416,7 +462,7 @@ export default function WorkbenchPage() {
             ) : (
               <input
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="输入模型名称"
+                placeholder={t("workbench.modelPlaceholder")}
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
               />
@@ -424,7 +470,7 @@ export default function WorkbenchPage() {
             {modelList.length > 0 && (
               <input
                 className="flex h-7 w-full rounded-md border border-input bg-transparent px-2 py-0.5 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="或手动输入其他模型"
+                placeholder={t("workbench.modelPlaceholder")}
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
               />
@@ -439,11 +485,13 @@ export default function WorkbenchPage() {
           {/* 左侧：原始输入 */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">原始提示词</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("workbench.originalPrompt")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
-                placeholder="输入你要优化的提示词…"
+                placeholder={t("workbench.originalPlaceholder")}
                 className="min-h-[300px] resize-y font-mono text-sm"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -451,7 +499,7 @@ export default function WorkbenchPage() {
               <div className="mt-3 flex items-center gap-2">
                 {status === "streaming" ? (
                   <Button variant="destructive" size="sm" onClick={handleStop}>
-                    停止生成
+                    {t("workbench.stop")}
                   </Button>
                 ) : (
                   <Button
@@ -459,7 +507,7 @@ export default function WorkbenchPage() {
                     disabled={!canOptimize}
                     onClick={() => void handleOptimize()}
                   >
-                    优化提示词
+                    {t("workbench.optimize")}
                   </Button>
                 )}
                 <span className="text-xs text-muted-foreground">
@@ -473,18 +521,20 @@ export default function WorkbenchPage() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">优化结果</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {t("workbench.result")}
+                </CardTitle>
                 {status === "done" && output && (
                   <div className="flex gap-1">
                     <Button variant="outline" size="sm" onClick={handleCopy}>
-                      复制
+                      {t("workbench.copy")}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => void handleOptimize()}
                     >
-                      重新优化
+                      {t("workbench.reoptimize")}
                     </Button>
                   </div>
                 )}
@@ -498,7 +548,7 @@ export default function WorkbenchPage() {
               )}
               {status === "idle" && !output && (
                 <div className="flex min-h-[300px] items-center justify-center text-sm text-muted-foreground">
-                  优化后的提示词将在这里显示
+                  {t("workbench.resultPlaceholder")}
                 </div>
               )}
               {(status === "streaming" || status === "done" || output) && (
@@ -512,7 +562,7 @@ export default function WorkbenchPage() {
               {status === "streaming" && (
                 <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                   <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                  正在生成…
+                  {t("workbench.optimizing")}
                 </div>
               )}
             </CardContent>

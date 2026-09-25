@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocale } from "@/lib/locale-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -30,14 +32,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("邮箱或密码错误");
+        setError(t("auth.loginFailed"));
         return;
       }
 
       router.push("/");
       router.refresh();
     } catch {
-      setError("登录失败，请稍后再试");
+      setError(t("auth.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,9 @@ export default function LoginPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-center text-xl">登录 PromptCraft</CardTitle>
+            <CardTitle className="text-center text-xl">
+              {t("auth.login")} PromptCraft
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
@@ -59,22 +63,22 @@ export default function LoginPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">邮箱</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">密码</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="至少 8 位"
+                  placeholder={t("auth.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -82,12 +86,12 @@ export default function LoginPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "登录中…" : "登录"}
+                {loading ? t("auth.loggingIn") : t("auth.loginButton")}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                还没有账号？{" "}
+                {t("auth.noAccount")}{" "}
                 <Link href="/register" className="text-primary underline-offset-4 hover:underline">
-                  注册
+                  {t("auth.registerNow")}
                 </Link>
               </p>
             </form>

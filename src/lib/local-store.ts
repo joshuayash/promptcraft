@@ -8,6 +8,7 @@ import type { LocalApiKey, TemplateItem, HistoryEntry } from "./types";
 const KEYS_KEY = "promptcraft:keys";
 const TEMPLATES_KEY = "promptcraft:templates";
 const HISTORY_KEY = "promptcraft:history";
+const CUSTOM_MODELS_KEY = "promptcraft:custom_models";
 
 function read<T>(key: string): T[] {
   try {
@@ -100,4 +101,31 @@ export function addLocalHistory(
 
 export function deleteLocalHistory(id: string): void {
   write(HISTORY_KEY, getLocalHistory().filter((h) => h.id !== id));
+}
+
+// ── Custom Models ─────────────────────────────────────────
+
+export interface CustomModelsMap {
+  [providerId: string]: string[];
+}
+
+export function getCustomModels(): CustomModelsMap {
+  try {
+    const raw = localStorage.getItem(CUSTOM_MODELS_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? (parsed as CustomModelsMap) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function setCustomModels(providerId: string, models: string[]): void {
+  const all = getCustomModels();
+  all[providerId] = models;
+  localStorage.setItem(CUSTOM_MODELS_KEY, JSON.stringify(all));
+}
+
+export function getCustomModelsForProvider(providerId: string): string[] {
+  return getCustomModels()[providerId] ?? [];
 }

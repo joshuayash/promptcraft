@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocale } from "@/lib/locale-context";
 import type { ApiErrorBody } from "@/lib/types";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -24,7 +26,7 @@ export default function RegisterPage() {
     setError("");
 
     if (password !== confirm) {
-      setError("两次输入的密码不一致");
+      setError(t("auth.passwordMismatch"));
       return;
     }
 
@@ -39,7 +41,7 @@ export default function RegisterPage() {
 
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as ApiErrorBody | null;
-        setError(body?.error?.message ?? "注册失败");
+        setError(body?.error?.message ?? t("auth.registerFailed"));
         return;
       }
 
@@ -58,7 +60,7 @@ export default function RegisterPage() {
       router.push("/");
       router.refresh();
     } catch {
-      setError("注册失败，请稍后再试");
+      setError(t("auth.registerFailed"));
     } finally {
       setLoading(false);
     }
@@ -70,7 +72,9 @@ export default function RegisterPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-center text-xl">注册 PromptCraft</CardTitle>
+            <CardTitle className="text-center text-xl">
+              {t("auth.register")} PromptCraft
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
@@ -80,22 +84,22 @@ export default function RegisterPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">邮箱</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">密码</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="至少 8 位"
+                  placeholder={t("auth.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -103,11 +107,11 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm">确认密码</Label>
+                <Label htmlFor="confirm">{t("auth.confirmPassword")}</Label>
                 <Input
                   id="confirm"
                   type="password"
-                  placeholder="再次输入密码"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
@@ -115,12 +119,12 @@ export default function RegisterPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "注册中…" : "注册"}
+                {loading ? t("auth.registering") : t("auth.registerButton")}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                已有账号？{" "}
+                {t("auth.hasAccount")}{" "}
                 <Link href="/login" className="text-primary underline-offset-4 hover:underline">
-                  登录
+                  {t("auth.loginNow")}
                 </Link>
               </p>
             </form>

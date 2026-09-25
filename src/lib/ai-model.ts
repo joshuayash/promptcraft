@@ -23,6 +23,9 @@ export function createLanguageModel(cfg: {
       return createAnthropic({ apiKey: cfg.apiKey, baseURL })(cfg.model);
     case "gemini":
       return createGoogleGenerativeAI({ apiKey: cfg.apiKey, baseURL })(cfg.model);
+    case "moonshot":
+      // Moonshot AI 使用 OpenAI 兼容协议，但保留独立协议标识以便未来扩展
+      return createOpenAI({ apiKey: cfg.apiKey, baseURL })(cfg.model);
     case "openai":
     default:
       return createOpenAI({ apiKey: cfg.apiKey, baseURL })(cfg.model);

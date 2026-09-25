@@ -76,7 +76,7 @@ export async function POST(req: Request) {
   let label = String(body?.label ?? "").trim();
 
   if (provider === "custom") {
-    protocol = (["openai", "anthropic", "gemini"] as const).includes(
+    protocol = (["openai", "anthropic", "gemini", "moonshot"] as const).includes(
       body?.protocol as Protocol,
     )
       ? (body?.protocol as Protocol)

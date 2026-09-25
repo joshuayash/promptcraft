@@ -24,11 +24,13 @@ import {
   updateLocalTemplate,
   deleteLocalTemplate,
 } from "@/lib/local-store";
+import { useLocale } from "@/lib/locale-context";
 import type { TemplateItem, ApiErrorBody } from "@/lib/types";
 
 export default function TemplatesPage() {
   const { data: session, status: authStatus } = useSession();
   const isLoggedIn = authStatus === "authenticated" && !!session?.user;
+  const { t } = useLocale();
 
   const [customTemplates, setCustomTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +71,11 @@ export default function TemplatesPage() {
     setDialogOpen(true);
   }
 
-  function openEdit(t: TemplateItem) {
-    setEditingId(t.id);
-    setFormName(t.name);
-    setFormDesc(t.description);
-    setFormPrompt(t.systemPrompt);
+  function openEdit(tpl: TemplateItem) {
+    setEditingId(tpl.id);
+    setFormName(tpl.name);
+    setFormDesc(tpl.description);
+    setFormPrompt(tpl.systemPrompt);
     setFormError("");
     setDialogOpen(true);
   }
@@ -83,7 +85,7 @@ export default function TemplatesPage() {
     setFormError("");
 
     if (!formName.trim() || !formPrompt.trim()) {
-      setFormError("名称和模板内容不能为空");
+      setFormError(t("templates.nameRequired"));
       return;
     }
 
@@ -108,7 +110,7 @@ export default function TemplatesPage() {
 
         if (!res.ok) {
           const body = (await res.json().catch(() => null)) as ApiErrorBody | null;
-          setFormError(body?.error?.message ?? "保存失败");
+          setFormError(body?.error?.message ?? t("templates.saveFailed"));
           return;
         }
 
@@ -135,7 +137,7 @@ export default function TemplatesPage() {
 
       setDialogOpen(false);
     } catch {
-      setFormError("保存失败，请稍后再试");
+      setFormError(t("templates.saveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -158,15 +160,16 @@ export default function TemplatesPage() {
       <Navbar />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">提示词模板</h1>
+          <h1 className="text-2xl font-bold">{t("templates.title")}</h1>
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openCreate}>新建模板</Button>
+              <Button onClick={openCreate}>{t("templates.newTemplate")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>
-                  {editingId ? "编辑模板" : "新建模板"}
+                  {editingId ? t("templates.editTemplate") : t("templates.newTemplate")}
                 </DialogTitle>
               </DialogHeader>
               <form
@@ -179,32 +182,32 @@ export default function TemplatesPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label>名称</Label>
+                  <Label>{t("templates.name")}</Label>
                   <Input
-                    placeholder="模板名称"
+                    placeholder={t("templates.namePlaceholder")}
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>描述</Label>
+                  <Label>{t("templates.description")}</Label>
                   <Input
-                    placeholder="一句话描述这个模板的用途"
+                    placeholder={t("templates.descriptionPlaceholder")}
                     value={formDesc}
                     onChange={(e) => setFormDesc(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>元提示词（System Prompt）</Label>
+                  <Label>{t("templates.systemPrompt")}</Label>
                   <Textarea
-                    placeholder="发给 AI 的系统提示词，指导它如何优化用户的提示词…"
+                    placeholder={t("templates.systemPromptPlaceholder")}
                     className="min-h-[200px] font-mono text-sm"
                     value={formPrompt}
                     onChange={(e) => setFormPrompt(e.target.value)}
                   />
                 </div>
                 <Button type="submit" disabled={submitting} className="w-full">
-                  {submitting ? "保存中…" : "保存"}
+                  {submitting ? t("templates.saving") : t("templates.save")}
                 </Button>
               </form>
             </DialogContent>
@@ -212,20 +215,20 @@ export default function TemplatesPage() {
         </div>
 
         {/* 预设模板 */}
-        <h2 className="mb-3 text-lg font-semibold">预设模板</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("templates.presetTemplates")}</h2>
         <div className="mb-8 grid gap-3 sm:grid-cols-2">
-          {PRESET_TEMPLATES.map((t) => (
-            <Card key={t.id}>
+          {PRESET_TEMPLATES.map((tpl) => (
+            <Card key={tpl.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-base">{t.name}</CardTitle>
+                  <CardTitle className="text-base">{tpl.name}</CardTitle>
                   <Badge variant="secondary" className="text-[10px]">
-                    预设
+                    {t("templates.preset")}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{t.description}</p>
+                <p className="text-sm text-muted-foreground">{tpl.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -234,38 +237,38 @@ export default function TemplatesPage() {
         <Separator className="my-6" />
 
         {/* 自定义模板 */}
-        <h2 className="mb-3 text-lg font-semibold">自定义模板</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("templates.customTemplates")}</h2>
         {loading ? (
-          <p className="text-sm text-muted-foreground">加载中…</p>
+          <p className="text-sm text-muted-foreground">{t("templates.loading")}</p>
         ) : customTemplates.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            还没有自定义模板，点击右上角「新建模板」创建。
+            {t("templates.empty")}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {customTemplates.map((t) => (
-              <Card key={t.id}>
+            {customTemplates.map((tpl) => (
+              <Card key={tpl.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t.name}</CardTitle>
+                  <CardTitle className="text-base">{tpl.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="mb-3 text-sm text-muted-foreground">
-                    {t.description || "无描述"}
+                    {tpl.description || t("templates.noDescription")}
                   </p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => openEdit(t)}
+                      onClick={() => openEdit(tpl)}
                     >
-                      编辑
+                      {t("templates.edit")}
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => void handleDelete(t.id)}
+                      onClick={() => void handleDelete(tpl.id)}
                     >
-                      删除
+                      {t("templates.delete")}
                     </Button>
                   </div>
                 </CardContent>

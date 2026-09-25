@@ -44,7 +44,7 @@ export const PROVIDERS: ProviderDef[] = [
   {
     id: "moonshot",
     name: "Moonshot (Kimi)",
-    protocol: "openai",
+    protocol: "moonshot",
     baseUrl: "https://api.moonshot.cn/v1",
     models: ["kimi-k2-0905-preview", "kimi-k2-turbo-preview", "moonshot-v1-128k"],
     keyHint: "platform.moonshot.cn",
@@ -83,6 +83,7 @@ export const DEFAULT_BASE_URLS: Record<Protocol, string> = {
   openai: "https://api.openai.com/v1",
   anthropic: "https://api.anthropic.com",
   gemini: "https://generativelanguage.googleapis.com",
+  moonshot: "https://api.moonshot.cn/v1",
 };
 
 // 端点必须显式声明（覆盖内置或自定义），SDK 默认不传

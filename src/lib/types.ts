@@ -1,5 +1,5 @@
 // 协议类型：决定用哪个 SDK 工厂 / 端点格式
-export type Protocol = "openai" | "anthropic" | "gemini";
+export type Protocol = "openai" | "anthropic" | "gemini" | "moonshot";
 
 // 前端展示用的 API Key 配置（脱敏视图，已登录模式）
 export interface ApiKeyView {
